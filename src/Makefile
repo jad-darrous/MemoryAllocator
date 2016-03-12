@@ -1,14 +1,13 @@
-CC=gcc
-PEDANTIC_PARANOID_FREAK =       -g -O0 -Wall -Wshadow -Wcast-align \
-				-Waggregate-return -Wstrict-prototypes \
-				-Wredundant-decls -Wnested-externs \
-				-Wpointer-arith -Wwrite-strings -finline-functions -Werror
-REASONABLY_CAREFUL_DUDE =	-Wall
-NO_PRAYER_FOR_THE_WICKED =	-w
-WARNINGS = 			$(PEDANTIC_PARANOID_FREAK)
+CC = gcc
 
-CFLAGS = -g -O2 $(WARNINGS)
-LDFLAGS= 
+WARNINGS =	-Wall -Wshadow -Wcast-align -Waggregate-return \
+			-Wstrict-prototypes -Wredundant-decls -Wnested-externs \
+			-Wpointer-arith -Wwrite-strings -finline-functions -Werror
+
+APP_FLAGS = -DINFO #-DFRAG -DCHECK
+
+CFLAGS = -g -O0 $(WARNINGS) $(APP_FLAGS)
+LDFLAGS =
 
 TEST_FILES = $(wildcard *.in)
 TEST_LIST = $(patsubst %.in,%.test,$(TEST_FILES))
@@ -17,21 +16,19 @@ C_FILES = $(wildcard *.c)
 BIN_FILES = $(patsubst %.c,%,$(C_FILES))
 O_FILES = $(patsubst %.c,%.o,$(C_FILES))
 
-mem_alloc_test:mem_alloc.c
-	$(CC) -DMAIN -DMEMORY_SIZE=2048 $(CFLAGS) $(LDFLAGS) $< -o $@
 
 mem_shell:mem_shell.c mem_alloc.c
-	$(CC) -DMEMORY_SIZE=512 $(CFLAGS) $(LDFLAGS) $^ -o $@
+	$(CC) -DMEMORY_SIZE=512 -w $(CFLAGS) $(LDFLAGS) $^ -o $@
 
 libmalloc.o:mem_alloc.c
-#	$(CC) -DMEMORY_SIZE=8388608 $(CFLAGS) -fPIC -c $< -o $@
+	# $(CC) -DMEMORY_SIZE=8388608 $(CFLAGS) -fPIC -c $< -o $@
 	$(CC) -DMEMORY_SIZE=65536 $(CFLAGS) -fPIC -c $< -o $@
 
 libmalloc.so:libmalloc.o
 	$(CC) -shared -Wl,-soname,$@ $< -o $@
 
 test_ls:libmalloc.so
-	LD_PRELOAD=./libmalloc.so ls
+	LD_PRELOAD=./libmalloc.so ls 2>/dev/null
 	LD_PRELOAD=""
 
 leak_test: leak_test.c libmalloc.o
@@ -59,6 +56,6 @@ test_leak2.out: leak_test ./libmalloc.so
 test: $(TEST_LIST)
 
 clean:
-	rm -f $(BIN_FILES) *.o *~ *.so mem_alloc_test
+	rm -f $(BIN_FILES) *.o *~ *.so *.out
 
 .PHONY: clean test
